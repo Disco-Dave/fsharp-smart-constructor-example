@@ -1,33 +1,36 @@
 namespace SmartConstructorExample
 
-module Range =
-    type Bound<'a> =
-        | Inclusive of 'a
-        | Exclusive of 'a
+type Bound<'a> =
+    | Inclusive of 'a
+    | Exclusive of 'a
 
-    let getBound bound =
+[<RequireQualifiedAccess>]
+module Bound =
+    let getValue bound =
         match bound with
         | Inclusive a -> a
         | Exclusive a -> a
 
-    type RangeResult =
-        | BelowLowerBound
-        | WithinBounds
-        | AboveUpperBound
+type Range<'a when 'a : comparison> private (lowerBound : Bound<'a>, upperBound : Bound<'a>) =
+    member val LowerBound = lowerBound
+    member val UpperBound = upperBound
+    
+    static member Make lowerBound upperBound =
+        let lowerValue = Bound.getValue lowerBound
+        let upperValue = Bound.getValue upperBound
 
-    type Range<'a when 'a : comparison> private (lowerBound : Bound<'a>, upperBound : Bound<'a>) =
-        member val LowerBound = lowerBound
-        member val UpperBound = upperBound
-        
-        static member Make lowerBound upperBound =
-            let upperValue = getBound lowerBound
-            let lowerValue = getBound upperBound
+        if lowerValue <= upperValue then
+            Some <| new Range<'a>(lowerBound, upperBound)
+        else
+            None
 
-            if lowerValue <= upperValue then
-                Some <| new Range<'a>(lowerBound, upperBound)
-            else
-                None
-
+type RangeResult =
+    | BelowLowerBound
+    | WithinBounds
+    | AboveUpperBound
+    
+[<RequireQualifiedAccess>]
+module Range =
     let private isWithinUpper<'a when 'a : comparison> (range : Range<'a>) value =
         match range.UpperBound with
         | Inclusive u -> value <= u
@@ -38,13 +41,13 @@ module Range =
         | Inclusive l -> value >= l
         | Exclusive l -> value > l
 
-    let testRange range value =
+    let test range value =
         match (isWithinLower range value, isWithinUpper range value) with
         | (true, true) -> WithinBounds
         | (false, _) -> BelowLowerBound
         | (_, false) -> AboveUpperBound
 
     let isWithin range value =
-        match (testRange range value) with
+        match (test range value) with
         | WithinBounds -> true
         | _ -> false
