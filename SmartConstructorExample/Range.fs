@@ -12,8 +12,10 @@ module Bound =
 
 
 type Range<'a when 'a: comparison> =
-    private { LowerBound: Bound<'a>
-              UpperBound: Bound<'a> }
+    private { _lowerBound: Bound<'a>
+              _upperBound: Bound<'a> }
+    member this.LowerBound = this._lowerBound
+    member this.UpperBound = this._upperBound
 
 type RangeResult =
     | BelowLowerBound
@@ -27,12 +29,12 @@ module Range =
         let upperValue = Bound.value upperBound
 
         if lowerValue <= upperValue then
-            Some <| { LowerBound = lowerBound
-                      UpperBound = upperBound }
+            Some <| { _lowerBound = lowerBound
+                      _upperBound = upperBound }
         else
             None
 
-    let test range value =
+    let test (range : Range<'a>) value =
         let isWithinUpperBound =
             match range.UpperBound with
             | Inclusive u -> value <= u
@@ -52,3 +54,9 @@ module Range =
         match test range value with
         | WithinBounds -> true
         | _ -> false
+        
+    let lowerBound (range : Range<'a>) =
+        range.LowerBound
+        
+    let upperBound (range : Range<'a>) =
+        range.UpperBound
